@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choir Music Theory Master</title>
+  <style>
+    :root {
+      --primary: #4a90e2;
+      --secondary: #50e3c2;
+      --accent: #f5a623;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #2c3e50;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: var(--card-bg);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    h1, h2, h3 { text-align: center; color: var(--primary); }
+
+    /* Badge & Progress Bar */
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 25px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      padding: 5px;
+    }
+
+    .badge-slot {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #aaa;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .badge-slot.unlocked {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    /* Lesson & Activity Cards */
+    .card {
+      border: 2px solid #eef2f5;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      background: #fff;
+    }
+
+    .narration-btn {
+      background: var(--secondary);
+      border: none;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .narration-btn:hover { opacity: 0.9; }
+
+    /* Interactive Area */
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: #fff;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    button.opt-btn {
+      padding: 12px;
+      font-size: 1rem;
+      border: 2px solid var(--primary);
+      background: white;
+      color: var(--primary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button.opt-btn:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .next-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    .next-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .feedback {
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.1rem;
+      min-height: 24px;
+      margin-top: 10px;
+    }
+    .correct { color: #2ecc71; }
+    .incorrect { color: #e74c3c; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Choir Theory Academy</h1>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="badge-slot" id="badge-0">1. Staff</div>
+    <div class="badge-slot" id="badge-1">2. Treble</div>
+    <div class="badge-slot" id="badge-2">3. Bass</div>
+    <div class="badge-slot" id="badge-3">4. Dynamics</div>
+    <div class="badge-slot" id="badge-4">5. Final Quiz</div>
+  </div>
+
+  <div class="card">
+    <h2 id="levelTitle">Level Title</h2>
+    <button class="narration-btn" onclick="readLesson()">🔊 Listen to Lesson</button>
+    <p id="lessonText">Lesson details will appear here...</p>
+  </div>
+
+  <div class="card">
+    <div class="canvas-container">
+      <canvas id="staffCanvas" width="400" height="160"></canvas>
+    </div>
+    <div id="questionText" style="text-align: center; font-weight: bold;"></div>
+    <div class="options-grid" id="optionsContainer"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextLevel()" disabled>Next Level ➔</button>
+  </div>
+</div>
+
+<script>
+  // Game Levels Data
+  const levels = [
+    {
+      title: "Level 1: The Staff & Clefs",
+      text: "Music is written on a staff consisting of 5 lines and 4 spaces. The higher up a note is on the staff, the higher it sounds!",
+      type: "identify_lines",
+      question: "Which component has 5 lines and 4 spaces?",
+      options: ["The Staff", "A Measure", "A Note Value", "A Dynamic"],
+      answer: "The Staff",
+      badge: "Staff Starter 🎼"
+    },
+    {
+      title: "Level 2: Treble Clef Note Names",
+      text: "Sopranos and Altos read Treble Clef! Lines are E-G-B-D-F (Every Good Boy Does Fine) and Spaces spell F-A-C-E.",
+      type: "note_id",
+      clef: "treble",
+      note: { name: "G", y: 100 }, // G4 line
+      question: "Identify this Treble Clef note on the second line:",
+      options: ["E", "F", "G", "A"],
+      answer: "G",
+      badge: "Treble Expert 🎶"
+    },
+    {
+      title: "Level 3: Bass Clef Note Names",
+      text: "Tenors and Basses read Bass Clef! Lines are G-B-D-F-A (Good Boys Do Fine Always) and Spaces are A-C-E-G (All Cows Eat Grass).",
+      type: "note_id",
+      clef: "bass",
+      note: { name: "C", y: 80 }, // C3 space
+      question: "Identify this Bass Clef note in the second space:",
+      options: ["A", "C", "E", "G"],
+      answer: "C",
+      badge: "Bass Master 🎵"
+    },
+    {
+      title: "Level 4: Dynamic Markings",
+      text: "Dynamics tell us how loud or soft to sing. Forte (f) means loud, and Piano (p) means soft!",
+      type: "dynamics",
+      question: "What dynamic marking means to sing SOFTLY?",
+      options: ["Forte (f)", "Piano (p)", "Mezzo Forte (mf)", "Crescendo"],
+      answer: "Piano (p)",
+      badge: "Dynamic Dynamo 📢"
+    },
+    {
+      title: "Level 5: Final Graduation Quiz",
+      text: "Let's put it all together! Demonstrate your knowledge to earn your Choir Master Certificate.",
+      type: "quiz",
+      question: "How many beats does a quarter note get in 4/4 time?",
+      options: ["1 Beat", "2 Beats", "3 Beats", "4 Beats"],
+      answer: "1 Beat",
+      badge: "Choir Master 🏆"
+    }
+  ];
+
+  let currentLevel = 0;
+  const canvas = document.getElementById('staffCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Speech Synthesis
+  function readLesson() {
+    window.speechSynthesis.cancel();
+    const text = levels[currentLevel].text;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Draw Music Staff & Clefs
+  function drawStaff(clef = "treble", noteY = null) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw 5 Lines
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 5; i++) {
+      let y = 40 + (i * 20);
+      ctx.beginPath();
+      ctx.moveTo(30, y);
+      ctx.lineTo(370, y);
+      ctx.stroke();
+    }
+
+    // Draw Clef Text
+    ctx.font = "60px serif";
+    ctx.fillStyle = "#000";
+    if (clef === "treble") {
+      ctx.fillText("🎼", 40, 110);
+    } else {
+      ctx.fillText("𝄢", 40, 95);
+    }
+
+    // Draw Note if applicable
+    if (noteY !== null) {
+      ctx.beginPath();
+      ctx.arc(200, noteY, 9, 0, Math.PI * 2);
+      ctx.fillStyle = "#000";
+      ctx.fill();
+      // Stem
+      ctx.beginPath();
+      ctx.moveTo(209, noteY);
+      ctx.lineTo(209, noteY - 35);
+      ctx.stroke();
+    }
+  }
+
+  // Load Level Content
+  function loadLevel() {
+    const lvl = levels[currentLevel];
+    document.getElementById('levelTitle').innerText = lvl.title;
+    document.getElementById('lessonText').innerText = lvl.text;
+    document.getElementById('questionText').innerText = lvl.question;
+    document.getElementById('feedback').innerText = "";
+    document.getElementById('nextBtn').disabled = true;
+
+    // Draw appropriate staff image
+    if (lvl.type === "note_id") {
+      drawStaff(lvl.clef, lvl.note.y);
+    } else {
+      drawStaff("treble", null);
+    }
+
+    // Render Option Buttons
+    const optionsContainer = document.getElementById('optionsContainer');
+    optionsContainer.innerHTML = "";
+    lvl.options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.innerText = opt;
+      btn.onclick = () => checkAnswer(opt, lvl.answer);
+      optionsContainer.appendChild(btn);
+    });
+  }
+
+  // Check Selected Answer
+  function checkAnswer(selected, correct) {
+    const feedback = document.getElementById('feedback');
+    if (selected === correct) {
+      feedback.innerText = "✨ Correct! Badge Unlocked!";
+      feedback.className = "feedback correct";
+      document.getElementById('nextBtn').disabled = false;
+      unlockBadge(currentLevel);
+    } else {
+      feedback.innerText = "❌ Try again!";
+      feedback.className = "feedback incorrect";
+    }
+  }
+
+  // Unlock Badge UI
+  function unlockBadge(levelIndex) {
+    const badgeSlot = document.getElementById(`badge-${levelIndex}`);
+    badgeSlot.classList.add('unlocked');
+    badgeSlot.innerText = levels[levelIndex].badge;
+  }
+
+  // Advance Level
+  function nextLevel() {
+    if (currentLevel < levels.length - 1) {
+      currentLevel++;
+      loadLevel();
+    } else {
+      alert("🎉 Congratulations! You have completed the Choir Theory Master Class!");
+    }
+  }
+
+  // Initialize First Level
+  window.onload = loadLevel;
+</script>
+</body>
+</html>
